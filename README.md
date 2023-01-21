@@ -1,1 +1,3 @@
 # BelchatowStories
+
+Simply JavaScript game. 
