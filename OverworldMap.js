@@ -1,5 +1,6 @@
 class OverworldMap {
     constructor(config) {
+        this.overworld = null;
         this.gameObjects = config.gameObjects;
         this.walls = config.walls || {};
 
@@ -10,6 +11,7 @@ class OverworldMap {
         this.upperImage.src = config.upperSrc;
 
         this.isCutscenePlaying = false;
+        this.cutSceneSpaces = config.cutsceneSpaces || {};
     }
 
     drawLowerImage(ctx, cameraPerson) {
@@ -49,6 +51,27 @@ class OverworldMap {
             await eventHandler.init();
         }
         this.isCutscenePlaying = false;
+
+        Object.values(this.gameObjects).forEach(object => object.doBehaviorEvent(this));
+    }
+
+    checkForFootstepCutscene() {
+        const hero = this.gameObjects["hero"];
+        const match = this.cutSceneSpaces[`${hero.x},${hero.y}`];
+        if (!this.isCutscenePlaying && match) {
+            this.startCutscene(match[0].events)
+        }
+    }
+
+    checkForActionCutscene() {
+        const hero = this.gameObjects["hero"];
+        const nextCoords = utils.nextPosition(hero.x, hero.y, hero.direction);
+        const match = Object.values(this.gameObjects).find(object => {
+            return `${object.x},${object.y}` === `${nextCoords.x},${nextCoords.y}`
+        });
+        if (!this.isCutscenePlaying && match && match.talking.length) {
+            this.startCutscene(match.talking[0].events)
+        }
     }
 
     addWall(x,y) {
@@ -85,19 +108,28 @@ window.OverworldMaps = {
                     {type: "stand", direction: "up", time: 800},
                     {type: "stand", direction: "right", time: 1200},
                     {type: "stand", direction: "up", time: 300},
+                ],
+                talking: [
+                    {
+                        events: [
+                            {type: "textMessage", text: "Go away...", faceHero: "npcA"},
+                            {type: "textMessage", text: "I said... GO AWAY!"},
+                            {who: "hero", type: "walk", direction: "left"},
+                        ]
+                    }
                 ]
             }),
             npcB: new Person({
-                x: utils.withGrid(3),
-                y: utils.withGrid(7),
+                x: utils.withGrid(8),
+                y: utils.withGrid(5),
                 src: "/images/characters/people/npc2.png",
-                behaviorLoop: [
-                    {type: "walk", direction: "left"},
-                    {type: "stand", direction: "up", time: 800},
-                    {type: "walk", direction: "up"},
-                    {type: "walk", direction: "right"},
-                    {type: "walk", direction: "down"},
-                ]
+                // behaviorLoop: [
+                //     {type: "walk", direction: "left"},
+                //     {type: "stand", direction: "up", time: 800},
+                //     {type: "walk", direction: "up"},
+                //     {type: "walk", direction: "right"},
+                //     {type: "walk", direction: "down"},
+                // ]
             })
         },
         walls: {
@@ -106,6 +138,61 @@ window.OverworldMaps = {
             [utils.asGridCoord(8,6)] : true,
             [utils.asGridCoord(7,7)] : true,
             [utils.asGridCoord(8,7)] : true,
+            [utils.asGridCoord(1,3)] : true,
+            [utils.asGridCoord(2,3)] : true,
+            [utils.asGridCoord(3,3)] : true,
+            [utils.asGridCoord(4,3)] : true,
+            [utils.asGridCoord(5,3)] : true,
+            [utils.asGridCoord(6,4)] : true,
+            [utils.asGridCoord(7,3)] : true,
+            [utils.asGridCoord(8,4)] : true,
+            [utils.asGridCoord(9,3)] : true,
+            [utils.asGridCoord(10,3)] : true,
+            [utils.asGridCoord(0,4)] : true,
+            [utils.asGridCoord(0,5)] : true,
+            [utils.asGridCoord(0,6)] : true,
+            [utils.asGridCoord(0,7)] : true,
+            [utils.asGridCoord(0,8)] : true,
+            [utils.asGridCoord(0,9)] : true,
+            [utils.asGridCoord(1,10)] : true,
+            [utils.asGridCoord(2,10)] : true,
+            [utils.asGridCoord(3,10)] : true,
+            [utils.asGridCoord(4,10)] : true,
+            [utils.asGridCoord(5,11)] : true,
+            [utils.asGridCoord(6,10)] : true,
+            [utils.asGridCoord(7,10)] : true,
+            [utils.asGridCoord(8,10)] : true,
+            [utils.asGridCoord(9,10)] : true,
+            [utils.asGridCoord(10,10)] : true,
+            [utils.asGridCoord(11,4)] : true,
+            [utils.asGridCoord(11,5)] : true,
+            [utils.asGridCoord(11,6)] : true,
+            [utils.asGridCoord(11,7)] : true,
+            [utils.asGridCoord(11,8)] : true,
+            [utils.asGridCoord(11,9)] : true,
+            [utils.asGridCoord(11,10)] : true,
+        },
+        cutsceneSpaces: {
+            [utils.asGridCoord(7,4)] : [
+                {
+                    events: [
+                        {who: "npcB", type: "walk", direction: "left"},
+                        {who: "npcB", type: "stand", direction: "up", time: 500},
+                        {type: "textMessage", text: "You shall not pass!"},
+                        {who: "npcB", type: "walk", direction: "right"},
+                        {who: "npcB", type: "stand", direction: "down"},
+                        {who: "hero", type: "walk", direction: "down"},
+                        {who: "hero", type: "walk", direction: "left"},
+                    ]
+                }
+            ],
+            [utils.asGridCoord(5,10)] : [
+                {
+                    events: [
+                        {type: "changeMap", map: "Kitchen"}
+                    ]
+                }
+            ],
         }
     },
     Kitchen: {
@@ -113,18 +200,21 @@ window.OverworldMaps = {
         upperSrc: "/images/maps/KitchenUpper.png",
         gameObjects: {
             hero: new Person({
-                x: utils.withGrid(3),
+                isPlayerControlled: true,
+                x: utils.withGrid(5),
                 y: utils.withGrid(5)
             }),
-            npcA: new Person({
-                x: utils.withGrid(9),
-                y: utils.withGrid(6),
-                src: "/images/characters/people/npc2.png"
-            }),
-            npcB: new Person({
+            npcC: new Person({
                 x: utils.withGrid(10),
                 y: utils.withGrid(8),
-                src: "/images/characters/people/npc3.png"
+                src: "/images/characters/people/npc3.png",
+                talking: [
+                    {
+                        events: [
+                            {type: "textMessage", text: "Greeting maj frend!", faceHero: "npcC"},
+                        ]
+                    }
+                ]
             })
         }
     },
