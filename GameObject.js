@@ -13,11 +13,11 @@ class GameObject {
         this.behaviorLoop = config.behaviorLoop || [];
         this.behaviorLoopIndex = 0;
         this.talking = config.talking || [];
+        this.retryTimeout = null;
     }
 
     mount(map) {
         this.isMounted = true;
-        map.addWall(this.x, this.y);
 
         setTimeout(() => {
             this.doBehaviorEvent(map);
@@ -25,19 +25,30 @@ class GameObject {
     }
 
     update() {
-
     }
 
     async doBehaviorEvent(map) {
 
-        if (map.isCutscenePlaying || this.behaviorLoop.length === 0) {
+        if (this.behaviorLoop.length === 0) {
+            return;
+        }
+
+        if (map.isCutscenePlaying) {
+
+            console.log("will retry", this.id)
+            if (this.retryTimeout) {
+                clearTimeout(this.retryTimeout);
+            }
+            this.retryTimeout = setTimeout(() => {
+                this.doBehaviorEvent(map);
+            }, 1000)
             return;
         }
 
         let eventConfig = this.behaviorLoop[this.behaviorLoopIndex];
         eventConfig.who = this.id;
 
-        const eventHandler = new OverworldEvent({map, event: eventConfig});
+        const eventHandler = new OverworldEvent({ map, event: eventConfig });
         await eventHandler.init();
 
         this.behaviorLoopIndex += 1;
@@ -47,4 +58,6 @@ class GameObject {
 
         this.doBehaviorEvent(map);
     }
+
+
 }

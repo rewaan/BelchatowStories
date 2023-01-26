@@ -1,8 +1,9 @@
 class OverworldMap {
     constructor(config) {
         this.overworld = null;
-        this.gameObjects = config.gameObjects;
+        this.gameObjects = {};
         this.walls = config.walls || {};
+        this.configObjects = config.configObjects;
 
         this.lowerImage = new Image();
         this.lowerImage.src = config.lowerSrc;
@@ -30,14 +31,31 @@ class OverworldMap {
 
     isSpaceTaken(currentX, currentY, direction) {
         const {x,y} = utils.nextPosition(currentX, currentY, direction);
-        return this.walls[`${x},${y}`] || false;
+        if (this.walls[`${x},${y}`]) {
+            return true;
+        }
+        return Object.values(this.gameObjects).find(obj => {
+            if (obj.x === x && obj.y === y) {return true;}
+            if (obj.intentPosition && obj.intentPosition[0] === x && obj.intentPosition[1] === y) {
+                return true;
+            }
+            return false;
+        })
+
     }
 
     mountObjects() {
-        Object.keys(this.gameObjects).forEach(key => {
-            let object = this.gameObjects[key];
+        Object.keys(this.configObjects).forEach(key => {
+            let object = this.configObjects[key];
             object.id = key;
-            object.mount(this);
+            let instance;
+
+            if (object.type === "Person") {
+                instance = new Person(object);
+            }
+            this.gameObjects[key] = instance;
+            this.gameObjects[key].id = key;
+            instance.mount(this);
         })
     }
 
@@ -51,8 +69,7 @@ class OverworldMap {
             await eventHandler.init();
         }
         this.isCutscenePlaying = false;
-
-        Object.values(this.gameObjects).forEach(object => object.doBehaviorEvent(this));
+        
     }
 
     checkForFootstepCutscene() {
@@ -70,39 +87,62 @@ class OverworldMap {
             return `${object.x},${object.y}` === `${nextCoords.x},${nextCoords.y}`
         });
         if (!this.isCutscenePlaying && match && match.talking.length) {
-            this.startCutscene(match.talking[0].events)
+            const relevantScenario = match.talking.find(scenario => {
+                return (scenario.required || []).every(sf => {
+                    return playerState.storyFlags[sf];
+                })
+            })
+            relevantScenario && this.startCutscene(relevantScenario.events)
         }
     }
 
-    addWall(x,y) {
-        this.walls[`${x},${y}`] = true;
-    }
-
-    removeWall(x,y) {
-        delete this.walls[`${x},${y}`];
-    }
-
-    moveWall(wasX, wasY, direction) {
-        this.removeWall(wasX, wasY);
-        const {x, y} = utils.nextPosition(wasX, wasY, direction);
-        this.addWall(x, y);
-    }
 }
 
 window.OverworldMaps = {
-    DemoRoom: {
-        lowerSrc: "/images/maps/DemoLower.png",
-        upperSrc: "/images/maps/DemoUpper.png",
-        gameObjects: {
-            hero: new Person({
-                x: utils.withGrid(5),
-                y: utils.withGrid(6),
+    Blok_10: {
+        id: "Blok_10_start",
+        lowerSrc: "/images/maps/blok_10.png",
+        upperSrc: "/images/maps/blok_10_upper.png",
+        gameObjects: {},
+        configObjects: {
+            hero:{
+                type: "Person",
+                x: utils.withGrid(8),
+                y: utils.withGrid(2),
                 isPlayerControlled: true
-            }),
-            npcA: new Person({
+            },
+            npcA: {
+                type: "Person",
                 x: utils.withGrid(7),
                 y: utils.withGrid(9),
                 src: "/images/characters/people/npc1.png",
+                behaviorLoop: [
+                    {type: "walk", direction: "left", time: 800},
+                    {type: "walk", direction: "up", time: 800},
+                    {type: "walk", direction: "right", time: 1200},
+                    {type: "walk", direction: "down", time: 300},
+                ],
+                talking: [
+                    {
+                        required: ["TALKED_TO_DARO"],
+                        events: [
+                            {type: "textMessage", text: "Daro jest taki przystojny...", faceHero: "npcA"},
+                        ]
+                    },
+                    {
+                        events: [
+                            {type: "textMessage", text: "Go away...", faceHero: "npcA"},
+                            {type: "textMessage", text: "I said... GO AWAY!"},
+                            {who: "hero", type: "walk", direction: "left"},
+                        ]
+                    }
+                ]
+            },
+            npcB:{
+                type: "Person",
+                x: utils.withGrid(8),
+                y: utils.withGrid(4),
+                src: "/images/characters/people/npc2.png",
                 behaviorLoop: [
                     {type: "stand", direction: "left", time: 800},
                     {type: "stand", direction: "up", time: 800},
@@ -112,110 +152,106 @@ window.OverworldMaps = {
                 talking: [
                     {
                         events: [
-                            {type: "textMessage", text: "Go away...", faceHero: "npcA"},
-                            {type: "textMessage", text: "I said... GO AWAY!"},
-                            {who: "hero", type: "walk", direction: "left"},
+                            {type: "textMessage", text: "Elo jestem Daroo", faceHero: "npcB"},
+                            {type: "textMessage", text: "Z pusta samarooo"},
+                            {type: "addStoryFlag", flag: "TALKED_TO_DARO"},
                         ]
                     }
                 ]
-            }),
-            npcB: new Person({
-                x: utils.withGrid(8),
-                y: utils.withGrid(5),
-                src: "/images/characters/people/npc2.png",
-                // behaviorLoop: [
-                //     {type: "walk", direction: "left"},
-                //     {type: "stand", direction: "up", time: 800},
-                //     {type: "walk", direction: "up"},
-                //     {type: "walk", direction: "right"},
-                //     {type: "walk", direction: "down"},
-                // ]
-            })
+            },
         },
-        walls: {
-            //"16,16": true
-            [utils.asGridCoord(7,6)] : true,
-            [utils.asGridCoord(8,6)] : true,
-            [utils.asGridCoord(7,7)] : true,
-            [utils.asGridCoord(8,7)] : true,
-            [utils.asGridCoord(1,3)] : true,
-            [utils.asGridCoord(2,3)] : true,
-            [utils.asGridCoord(3,3)] : true,
-            [utils.asGridCoord(4,3)] : true,
-            [utils.asGridCoord(5,3)] : true,
-            [utils.asGridCoord(6,4)] : true,
-            [utils.asGridCoord(7,3)] : true,
-            [utils.asGridCoord(8,4)] : true,
-            [utils.asGridCoord(9,3)] : true,
-            [utils.asGridCoord(10,3)] : true,
-            [utils.asGridCoord(0,4)] : true,
-            [utils.asGridCoord(0,5)] : true,
-            [utils.asGridCoord(0,6)] : true,
-            [utils.asGridCoord(0,7)] : true,
-            [utils.asGridCoord(0,8)] : true,
-            [utils.asGridCoord(0,9)] : true,
-            [utils.asGridCoord(1,10)] : true,
-            [utils.asGridCoord(2,10)] : true,
-            [utils.asGridCoord(3,10)] : true,
-            [utils.asGridCoord(4,10)] : true,
-            [utils.asGridCoord(5,11)] : true,
-            [utils.asGridCoord(6,10)] : true,
-            [utils.asGridCoord(7,10)] : true,
-            [utils.asGridCoord(8,10)] : true,
-            [utils.asGridCoord(9,10)] : true,
-            [utils.asGridCoord(10,10)] : true,
-            [utils.asGridCoord(11,4)] : true,
-            [utils.asGridCoord(11,5)] : true,
-            [utils.asGridCoord(11,6)] : true,
-            [utils.asGridCoord(11,7)] : true,
-            [utils.asGridCoord(11,8)] : true,
-            [utils.asGridCoord(11,9)] : true,
-            [utils.asGridCoord(11,10)] : true,
-        },
+
+        walls: walls.blok_walls(),
         cutsceneSpaces: {
-            [utils.asGridCoord(7,4)] : [
+            [utils.asGridCoord(1,3)] : [
                 {
                     events: [
-                        {who: "npcB", type: "walk", direction: "left"},
-                        {who: "npcB", type: "stand", direction: "up", time: 500},
-                        {type: "textMessage", text: "You shall not pass!"},
-                        {who: "npcB", type: "walk", direction: "right"},
-                        {who: "npcB", type: "stand", direction: "down"},
-                        {who: "hero", type: "walk", direction: "down"},
-                        {who: "hero", type: "walk", direction: "left"},
+                        {
+                            type: "changeMap",
+                            map: "Plac",
+                            x: utils.withGrid(1),
+                            y: utils.withGrid(3),
+                            direction: "left",
+                        }
                     ]
                 }
             ],
-            [utils.asGridCoord(5,10)] : [
+            [utils.asGridCoord(11,3)] : [
                 {
                     events: [
-                        {type: "changeMap", map: "Kitchen"}
+                        {
+                            required: ["TALKED_TO_DARO"],
+                            type: "changeMapWithCheck",
+                            map: "Inter",
+                            defaultMap: "Plac",
+                            x: utils.withGrid(1),
+                            y: utils.withGrid(3),
+                            direction: "right",
+                        }
                     ]
                 }
             ],
         }
     },
-    Kitchen: {
-        lowerSrc: "/images/maps/KitchenLower.png",
-        upperSrc: "/images/maps/KitchenUpper.png",
-        gameObjects: {
-            hero: new Person({
-                isPlayerControlled: true,
-                x: utils.withGrid(5),
-                y: utils.withGrid(5)
-            }),
-            npcC: new Person({
-                x: utils.withGrid(10),
-                y: utils.withGrid(8),
-                src: "/images/characters/people/npc3.png",
-                talking: [
-                    {
-                        events: [
-                            {type: "textMessage", text: "Greeting maj frend!", faceHero: "npcC"},
-                        ]
-                    }
-                ]
-            })
+    Inter: {
+        id: "Inter_start",
+        lowerSrc: "/images/maps/inter.png",
+        upperSrc: "/images/maps/inter_upper.png",
+        gameObjects: {},
+        configObjects: {
+            hero: {
+                type: "Person",
+                x: utils.withGrid(1),
+                y: utils.withGrid(3),
+                isPlayerControlled: true
+            },
+        },
+        walls: walls.inter_walls(),
+        cutsceneSpaces: {
+            [utils.asGridCoord(1,3)] : [
+                {
+                    events: [
+                        {
+                            type: "changeMap",
+                            map: "Blok_10",
+                            x: utils.withGrid(11),
+                            y: utils.withGrid(3),
+                            direction: "left",
+                        }
+                    ]
+                }
+            ],
+        }
+
+    },
+    Plac: {
+        id: "Plac_start",
+        lowerSrc: "/images/maps/plac_u_krzycha.png",
+        upperSrc: "/images/maps/plac_u_krzycha_upper.png",
+        gameObjects: {},
+        configObjects: {
+            hero: {
+                type: "Person",
+                x: utils.withGrid(1),
+                y: utils.withGrid(3),
+                isPlayerControlled: true
+            },
+        },
+        walls: walls.plac_walls(),
+        cutsceneSpaces: {
+            [utils.asGridCoord(1,3)] : [
+                {
+                    events: [
+                        {
+                            type: "changeMap",
+                            map: "Blok_10",
+                            x: utils.withGrid(1),
+                            y: utils.withGrid(3),
+                            direction: "right",
+                        }
+                    ]
+                }
+            ],
         }
     },
 }
