@@ -101,8 +101,8 @@ class OverworldMap {
 window.OverworldMaps = {
     Blok_10: {
         id: "Blok_10_start",
-        lowerSrc: "/images/maps/blok_10.png",
-        upperSrc: "/images/maps/blok_10_upper.png",
+        lowerSrc: "./images/maps/blok_10.png",
+        upperSrc: "./images/maps/blok_10_upper.png",
         gameObjects: {},
         configObjects: {
             hero:{
@@ -115,7 +115,7 @@ window.OverworldMaps = {
                 type: "Person",
                 x: utils.withGrid(7),
                 y: utils.withGrid(9),
-                src: "/images/characters/people/npc1.png",
+                src: "./images/characters/people/npc1.png",
                 behaviorLoop: [
                     {type: "walk", direction: "left", time: 800},
                     {type: "walk", direction: "up", time: 800},
@@ -142,7 +142,7 @@ window.OverworldMaps = {
                 type: "Person",
                 x: utils.withGrid(8),
                 y: utils.withGrid(4),
-                src: "/images/characters/people/npc2.png",
+                src: "./images/characters/people/npc2.png",
                 behaviorLoop: [
                     {type: "stand", direction: "left", time: 800},
                     {type: "stand", direction: "up", time: 800},
@@ -195,8 +195,8 @@ window.OverworldMaps = {
     },
     Inter: {
         id: "Inter_start",
-        lowerSrc: "/images/maps/inter.png",
-        upperSrc: "/images/maps/inter_upper.png",
+        lowerSrc: "./images/maps/inter.png",
+        upperSrc: "./images/maps/inter_upper.png",
         gameObjects: {},
         configObjects: {
             hero: {
@@ -226,8 +226,8 @@ window.OverworldMaps = {
     },
     Plac: {
         id: "Plac_start",
-        lowerSrc: "/images/maps/plac_u_krzycha.png",
-        upperSrc: "/images/maps/plac_u_krzycha_upper.png",
+        lowerSrc: "./images/maps/plac_u_krzycha.png",
+        upperSrc: "./images/maps/plac_u_krzycha_upper.png",
         gameObjects: {},
         configObjects: {
             hero: {
