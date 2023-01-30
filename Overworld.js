@@ -58,6 +58,8 @@ class Overworld {
             this.map.gameObjects.hero.y = heroInitialState.y;
             this.map.gameObjects.hero.direction = heroInitialState.direction;
         }
+        this.event = new OverworldEvent({map: this.map, event: {type: "mapName", text: this.map.name}})
+        this.event.init()
     }
 
     init() {

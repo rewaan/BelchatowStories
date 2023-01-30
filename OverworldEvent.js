@@ -59,6 +59,14 @@ class OverworldEvent {
         message.init( document.querySelector(".game-container") )
     }
 
+    mapName(resolve) {
+        const message = new MapNameLabel({
+            text: this.event.text,
+            onComplete: () => resolve()
+        })
+        message.init( document.querySelector(".game-container") )
+    }
+
     changeMap(resolve) {
 
         Object.values(this.map.gameObjects).forEach(obj => {

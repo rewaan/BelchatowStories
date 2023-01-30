@@ -4,7 +4,6 @@ class Person extends GameObject {
         this.movementProgressRemaining = 0;
         this.isStanding = false;
         this.intentPosition = null;
-
         this.isPlayerControlled = config.isPlayerControlled || false;
 
         this.directionUpdate = {

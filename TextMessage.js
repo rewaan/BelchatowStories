@@ -34,7 +34,6 @@ class TextMessage {
         } else {
             this.revealingText.warpToDone();
         }
-
     }
 
     init(container) {

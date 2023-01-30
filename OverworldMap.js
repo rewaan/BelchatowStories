@@ -1,6 +1,7 @@
 class OverworldMap {
     constructor(config) {
         this.overworld = null;
+        this.name = config.name;
         this.gameObjects = {};
         this.walls = config.walls || {};
         this.configObjects = config.configObjects;
@@ -47,15 +48,16 @@ class OverworldMap {
     mountObjects() {
         Object.keys(this.configObjects).forEach(key => {
             let object = this.configObjects[key];
-            object.id = key;
-            let instance;
-
-            if (object.type === "Person") {
-                instance = new Person(object);
+            if (object.required.every(sf => playerState.storyFlags[sf])) {
+                object.id = key;
+                let instance;
+                if (object.type === "Person") {
+                    instance = new Person(object);
+                }
+                this.gameObjects[key] = instance;
+                this.gameObjects[key].id = key;
+                instance.mount(this);
             }
-            this.gameObjects[key] = instance;
-            this.gameObjects[key].id = key;
-            instance.mount(this);
         })
     }
 
@@ -101,26 +103,33 @@ class OverworldMap {
 window.OverworldMaps = {
     Blok_10: {
         id: "Blok_10_start",
+        name: "Blok numer 10",
         lowerSrc: "./images/maps/blok_10.png",
         upperSrc: "./images/maps/blok_10_upper.png",
         gameObjects: {},
         configObjects: {
-            hero:{
+            hero: {
                 type: "Person",
                 x: utils.withGrid(8),
                 y: utils.withGrid(2),
-                isPlayerControlled: true
+                isPlayerControlled: true,
+                required: [],
             },
             npcA: {
                 type: "Person",
                 x: utils.withGrid(7),
                 y: utils.withGrid(9),
                 src: "./images/characters/people/npc1.png",
+                required: ["TALKED_TO_DARO"],
                 behaviorLoop: [
-                    {type: "walk", direction: "left", time: 800},
-                    {type: "walk", direction: "up", time: 800},
-                    {type: "walk", direction: "right", time: 1200},
-                    {type: "walk", direction: "down", time: 300},
+                    {type: "walk", direction: "left"},
+                    {type: "stand", direction: "left", time: 1200},
+                    {type: "walk", direction: "up"},
+                    {type: "stand", direction: "up", time: 1200},
+                    {type: "walk", direction: "right"},
+                    {type: "stand", direction: "right", time: 1200},
+                    {type: "walk", direction: "down"},
+                    {type: "stand", direction: "down", time: 1200},
                 ],
                 talking: [
                     {
@@ -143,6 +152,7 @@ window.OverworldMaps = {
                 x: utils.withGrid(8),
                 y: utils.withGrid(4),
                 src: "./images/characters/people/npc2.png",
+                required: [],
                 behaviorLoop: [
                     {type: "stand", direction: "left", time: 800},
                     {type: "stand", direction: "up", time: 800},
@@ -181,7 +191,7 @@ window.OverworldMaps = {
                     events: [
                         {
                             required: ["TALKED_TO_DARO"],
-                            type: "changeMapWithCheck",
+                            type: "changeMap",
                             map: "Inter",
                             defaultMap: "Plac",
                             x: utils.withGrid(1),
@@ -195,6 +205,7 @@ window.OverworldMaps = {
     },
     Inter: {
         id: "Inter_start",
+        name: "Interlogos",
         lowerSrc: "./images/maps/inter.png",
         upperSrc: "./images/maps/inter_upper.png",
         gameObjects: {},
@@ -203,8 +214,17 @@ window.OverworldMaps = {
                 type: "Person",
                 x: utils.withGrid(1),
                 y: utils.withGrid(3),
-                isPlayerControlled: true
+                isPlayerControlled: true,
+                required: [],
             },
+            dryzek: {
+                type: "Person",
+                x: utils.withGrid(8),
+                y: utils.withGrid(7),
+                src: "./images/characters/people/npc5.png",
+                direction: "left",
+                required: [],
+            }
         },
         walls: walls.inter_walls(),
         cutsceneSpaces: {
@@ -226,6 +246,7 @@ window.OverworldMaps = {
     },
     Plac: {
         id: "Plac_start",
+        name: "Plac u Krzycha",
         lowerSrc: "./images/maps/plac_u_krzycha.png",
         upperSrc: "./images/maps/plac_u_krzycha_upper.png",
         gameObjects: {},
@@ -234,7 +255,8 @@ window.OverworldMaps = {
                 type: "Person",
                 x: utils.withGrid(1),
                 y: utils.withGrid(3),
-                isPlayerControlled: true
+                isPlayerControlled: true,
+                required: [],
             },
         },
         walls: walls.plac_walls(),
